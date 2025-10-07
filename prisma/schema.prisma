@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Astrological Profile
+  astrologicalProfile AstrologicalProfile?
+  
+  // Chat Sessions
+  chatSessions ChatSession[]
+  
+  // Subscription
+  subscription Subscription?
+
+  @@map("users")
+}
+
+model AstrologicalProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Birth Details
+  fullName      String
+  dateOfBirth   DateTime
+  timeOfBirth   String? // Can be null if unknown
+  placeOfBirth  String
+  latitude      Float?
+  longitude     Float?
+  
+  // Astrological Data
+  sunSign       String
+  moonSign      String
+  risingSign    String
+  nakshatra     String?
+  dosha         String?
+  
+  // Planetary Positions (stored as JSON)
+  planetaryPositions Json?
+  
+  // Current Transits
+  currentTransits Json?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("astrological_profiles")
+}
+
+model ChatSession {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title     String
+  category  ChatCategory
+  messages  ChatMessage[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  role      MessageRole
+  content   String
+  metadata  Json? // Store any additional context like astrological data used
+  
+  createdAt DateTime @default(now())
+
+  @@map("chat_messages")
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  plan      SubscriptionPlan
+  status    SubscriptionStatus
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+enum ChatCategory {
+  DREAM_INTERPRETATION
+  LOVE_RELATIONSHIP
+  HEALING_EMOTIONAL
+  WEALTH_SUCCESS
+  GENERAL_GUIDANCE
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum SubscriptionPlan {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  UNPAID
+}
